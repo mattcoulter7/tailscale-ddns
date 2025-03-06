@@ -99,6 +99,7 @@ while true; do
   # Only update this if it is different to the existing config -
   # we don't want to unnecessarily restart dnsmasq if nothing has changed
   TEMP_CONFIG_PATH="/tmp/tailscale-dnsmasq.conf"
+  > "$TEMP_CONFIG_PATH"
 
   # Generate new dnsmasq config in a temporary file
   for DOMAIN in $DOMAINS; do
