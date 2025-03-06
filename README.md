@@ -22,7 +22,7 @@ Set these environment variables to control the updater:
 | **THRESHOLD_SECONDS**   | `30`                                    | How many second old a device’s `lastSeen` can be to be considered online.                                        |
 | **REFRESH_INTERVAL**    | `30`                                    | How many seconds to wait before re-checking devices and updating Tailscale DNS.                                  |
 | **TAILSCALE_API_URL**   | `https://api.tailscale.com/api/v2`      | Tailscale API endpoint (rarely changed).                                                                         |
-| **DNSMASQ_CONFIG_PATH** | `/etc/dnsmasq.d/tailscale-dns`          | When tailscale DNSMASQ config mapping is saved to.                                                               |
+| **DNSMASQ_CONFIG_PATH** | `/etc/dnsmasq.d/tailscale-dns.conf`          | When tailscale DNSMASQ config mapping is saved to.                                                               |
 
 ## Quick Start (Docker)
 

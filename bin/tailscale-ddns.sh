@@ -4,7 +4,7 @@ TAILNET="$TAILNET"
 TAILSCALE_API_KEY="$TAILSCALE_API_KEY"
 TAILSCALE_API_URL="${TAILSCALE_API_URL:-https://api.tailscale.com/api/v2}"
 DEVICE_PATTERN="$DEVICE_PATTERN"
-DNSMASQ_CONFIG_PATH="${TAILSCALE_DNSMASQ_CONFIG_PATH:-/etc/dnsmasq.d/tailscale-dns}"
+DNSMASQ_CONFIG_PATH="${TAILSCALE_DNSMASQ_CONFIG_PATH:-/etc/dnsmasq.d/tailscale-dns.conf}"
 DOMAIN="$DOMAIN"
 
 # Default threshold of 30 seconds if not set:
