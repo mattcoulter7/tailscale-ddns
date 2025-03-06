@@ -5,7 +5,7 @@ TAILSCALE_API_KEY="$TAILSCALE_API_KEY"
 TAILSCALE_API_URL="${TAILSCALE_API_URL:-https://api.tailscale.com/api/v2}"
 DEVICE_PATTERN="$DEVICE_PATTERN"
 DNSMASQ_CONFIG_PATH="${TAILSCALE_DNSMASQ_CONFIG_PATH:-/etc/dnsmasq.d/tailscale-dns.conf}"
-DOMAIN="$DOMAIN"
+DOMAINS="$DOMAIN"  # Supports multiple space-separated domains
 
 # Default threshold of 30 seconds if not set:
 THRESHOLD_SECONDS="${THRESHOLD_SECONDS:-30}"
@@ -13,7 +13,7 @@ THRESHOLD_SECONDS="${THRESHOLD_SECONDS:-30}"
 # Default refresh interval of 30 seconds if not set:
 REFRESH_INTERVAL="${REFRESH_INTERVAL:-30}"
 
-if [ -z "$DOMAIN" ]; then
+if [ -z "$DOMAINS" ]; then
   echo "[ERROR] DOMAIN environment variable is required."
   exit 1
 fi
@@ -28,6 +28,7 @@ echo "[INFO] DEVICE_PATTERN: $DEVICE_PATTERN"
 echo "[INFO] TAILSCALE_API_URL: $TAILSCALE_API_URL"
 echo "[INFO] THRESHOLD_SECONDS: $THRESHOLD_SECONDS"
 echo "[INFO] REFRESH_INTERVAL: $REFRESH_INTERVAL seconds"
+echo "[INFO] DOMAINS: $DOMAINS"
 
 touch "$DNSMASQ_CONFIG_PATH"
 OLD_DNS=""
@@ -100,9 +101,10 @@ while true; do
   TEMP_CONFIG_PATH="/tmp/tailscale-dnsmasq.conf"
 
   # Generate new dnsmasq config in a temporary file
-  > "$TEMP_CONFIG_PATH"  # Clear temporary file
-  for IP in $DNS_IPS; do
-    echo "address=/$DOMAIN/$IP" >> "$TEMP_CONFIG_PATH"
+  for DOMAIN in $DOMAINS; do
+    for IP in $DNS_IPS; do
+      echo "address=/$DOMAIN/$IP" >> "$TEMP_CONFIG_PATH"
+    done
   done
 
   # Compare with existing config, and only update if there are changes
