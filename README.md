@@ -4,7 +4,7 @@ This lightweight service dynamically updates your Tailscale tailnet’s DNS name
 
 ## Features
 
-- **Automatic Discovery** of devices by hostname prefix (e.g., `tailscale-proxy-dns-`).
+- **Automatic Discovery** of devices by hostname prefix (e.g., `tailscale-ddns-`).
 - **Time-based Filtering**: Only includes devices whose `lastSeen` is within a configurable threshold, ensuring only recently online devices are included.
 - **Redundancy & Load Balancing**: Multiple devices can be present in the global Tailscale DNS settings.
 - **Environment-Configurable**: Easily change refresh intervals, Tailscale API URL, patterns, and more.
@@ -13,14 +13,16 @@ This lightweight service dynamically updates your Tailscale tailnet’s DNS name
 
 Set these environment variables to control the updater:
 
-| Variable             | Default Value                           | Description                                                                                                      |
-|----------------------|-----------------------------------------|------------------------------------------------------------------------------------------------------------------|
-| **TAILSCALE_API_KEY** | *(Required)*                           | A Tailscale API key with permission to read device info and update DNS.                                         |
-| **TAILNET**           | *(Required)*                           | Your Tailscale tailnet name, typically looks like `example.ts.net`.                                             |
-| **DEVICE_PATTERN**    | *(Required)*                           | The hostname prefix used to filter devices (e.g., `tailscale-proxy-dns-`).                                      |
-| **THRESHOLD_MINUTES** | `5`                                     | How many minutes old a device’s `lastSeen` can be to be considered online.                                      |
-| **REFRESH_INTERVAL**  | `120`                                   | How many seconds to wait before re-checking devices and updating Tailscale DNS.                                 |
-| **TAILSCALE_API_URL** | `https://api.tailscale.com/api/v2`      | Tailscale API endpoint (rarely changed).                                                                        |
+| Variable                | Default Value                           | Description                                                                                                      |
+|-------------------------|-----------------------------------------|------------------------------------------------------------------------------------------------------------------|
+| **TAILSCALE_API_KEY**   | *(Required)*                            | A Tailscale API key with permission to read device info and update DNS.                                          |
+| **TAILNET**             | *(Required)*                            | Your Tailscale tailnet name, typically looks like `example.ts.net`.                                              |
+| **DEVICE_PATTERN**      | *(Required)*                            | The hostname prefix used to filter devices (e.g., `tailscale-ddns-`).                                       |
+| **DOMAIN**              | *(Required)*                            | Domain register to to tailscale ip                                                                               |
+| **THRESHOLD_SECONDS**   | `30`                                    | How many second old a device’s `lastSeen` can be to be considered online.                                        |
+| **REFRESH_INTERVAL**    | `30`                                    | How many seconds to wait before re-checking devices and updating Tailscale DNS.                                  |
+| **TAILSCALE_API_URL**   | `https://api.tailscale.com/api/v2`      | Tailscale API endpoint (rarely changed).                                                                         |
+| **DNSMASQ_CONFIG_PATH** | `/etc/dnsmasq.d/tailscale-dns`          | When tailscale DNSMASQ config mapping is saved to.                                                               |
 
 ## Quick Start (Docker)
 
@@ -33,9 +35,8 @@ Set these environment variables to control the updater:
    docker run -it --rm \
      -e TAILSCALE_API_KEY="tskey-api-***" \
      -e TAILNET="your-tailnet.ts.net" \
-     -e DEVICE_PATTERN="tailscale-proxy-dns-" \
-     -e THRESHOLD_MINUTES=5 \
-     -e REFRESH_INTERVAL=120 \
+     -e DEVICE_PATTERN="tailscale-ddns-" \
+     -e DOMAIN="your.domain" \
      --name tailscale-ddns \
      mattcoulter7/tailscale-ddns:latest
    ```
@@ -73,14 +74,11 @@ spec:
             - name: TAILSCALE_API_KEY
               value: "tskey-api-***"
             - name: TAILNET
-              value: "tailb876d6.ts.net"
+              value: "tail***.ts.net"
             - name: DEVICE_PATTERN
-              value: "tailscale-proxy-dns-"
-            # Optional environment vars:
-            # - name: THRESHOLD_MINUTES
-            #   value: "5"
-            # - name: REFRESH_INTERVAL
-            #   value: "120"
+              value: "tailscale-ddns-"
+            - name: DOMAIN
+              value: "your.domain"
 ```
 
 Apply it to your cluster:
@@ -107,13 +105,9 @@ services:
     container_name: tailscale-ddns
     environment:
       - TAILSCALE_API_KEY=tskey-api-***
-      - TAILNET=your-tailnet.ts.net
-      - DEVICE_PATTERN=tailscale-proxy-dns-
-      # Optional:
-      # - THRESHOLD_MINUTES=5
-      # - REFRESH_INTERVAL=120
-    # Typically no special network is required. 
-    # This container only needs outgoing internet to reach Tailscale's API.
+      - TAILNET=your-tail***.ts.net
+      - DEVICE_PATTERN=tailscale-ddns-
+      - DOMAIN=your.domain
 ```
 
 Then start it with:
@@ -124,15 +118,18 @@ docker-compose up -d
 ## Usage & Operation
 
 1. **Identifying Matching Devices**  
-   Any Tailscale nodes whose `hostname` begins with your `DEVICE_PATTERN` and have been “online” in the last X minutes (as per `THRESHOLD_MINUTES`) will be included.
+   Any Tailscale nodes whose `hostname` begins with your `DEVICE_PATTERN` and have been “online” in the last X seconds (as per `THRESHOLD_SECONDS`) will be included.
 
-2. **DNS Updates**  
+2. **Tailscale DNS Updates**  
    The container sends a POST request to Tailscale’s API, setting your tailnet’s DNS nameservers to a JSON array of these device IPs. You can see these new DNS server entries in your Tailscale Admin Panel or by checking logs.
 
-3. **Auto-Refresh**  
+3. **DNSMASQ Updates**  
+   The container sends updates to the dnsmasq configuration located at `DNSMASQ_CONFIG_PATH`. It recomended to share a mount here with the dnsmasq container so the settings is applied.
+
+4. **Auto-Refresh**  
    The script repeats every `REFRESH_INTERVAL` seconds, re-checking and updating if device IPs have changed.
 
-4. **High Availability**  
+5. **High Availability**  
    Multiple devices can show up in your DNS servers list, letting you distribute DNS load or provide redundancy.
 
 ## Troubleshooting
