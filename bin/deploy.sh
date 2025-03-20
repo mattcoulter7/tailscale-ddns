@@ -1,4 +1,4 @@
-docker build -f Dockerfile -t entrypoint:latest .
+docker build -f Dockerfile -t tailscale-ddns:latest .
 docker login
-docker tag entrypoint:latest mattcoulter7/entrypoint:latest
-docker push mattcoulter7/entrypoint:latest
+docker tag tailscale-ddns:latest mattcoulter7/tailscale-ddns:latest
+docker push mattcoulter7/tailscale-ddns:latest

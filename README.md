@@ -4,7 +4,7 @@ This lightweight service dynamically updates your Tailscale tailnet’s DNS name
 
 ## Features
 
-- **Automatic Discovery** of devices by hostname prefix (e.g., `entrypoint-`).
+- **Automatic Discovery** of devices by hostname prefix (e.g., `tailscale-ddns-`).
 - **Time-based Filtering**: Only includes devices whose `lastSeen` is within a configurable threshold, ensuring only recently online devices are included.
 - **Redundancy & Load Balancing**: Multiple devices can be present in the global Tailscale DNS settings.
 - **Environment-Configurable**: Easily change refresh intervals, Tailscale API URL, patterns, and more.
@@ -17,7 +17,7 @@ Set these environment variables to control the updater:
 |-------------------------|-----------------------------------------|------------------------------------------------------------------------------------------------------------------|
 | **TAILSCALE_API_KEY**   | *(Required)*                            | A Tailscale API key with permission to read device info and update DNS.                                          |
 | **TAILNET**             | *(Required)*                            | Your Tailscale tailnet name, typically looks like `example.ts.net`.                                              |
-| **DEVICE_PATTERN**      | *(Required)*                            | The hostname prefix used to filter devices (e.g., `entrypoint-`).                                       |
+| **DEVICE_PATTERN**      | *(Required)*                            | The hostname prefix used to filter devices (e.g., `tailscale-ddns-`).                                       |
 | **DOMAIN**              | *(Required)*                            | Domain register to to tailscale ip                                                                               |
 | **THRESHOLD_SECONDS**   | `30`                                    | How many second old a device’s `lastSeen` can be to be considered online.                                        |
 | **REFRESH_INTERVAL**    | `30`                                    | How many seconds to wait before re-checking devices and updating Tailscale DNS.                                  |
@@ -28,43 +28,43 @@ Set these environment variables to control the updater:
 
 1. **Build** or **pull** the image:
    ```bash
-   docker pull mattcoulter7/entrypoint:latest
+   docker pull mattcoulter7/tailscale-ddns:latest
    ```
 2. **Run** with environment variables:
    ```bash
    docker run -it --rm \
      -e TAILSCALE_API_KEY="tskey-api-***" \
      -e TAILNET="your-tailnet.ts.net" \
-     -e DEVICE_PATTERN="entrypoint-" \
+     -e DEVICE_PATTERN="tailscale-ddns-" \
      -e DOMAIN="your.domain" \
-     --name entrypoint \
-     mattcoulter7/entrypoint:latest
+     --name tailscale-ddns \
+     mattcoulter7/tailscale-ddns:latest
    ```
 
 This container will periodically (every 120 seconds by default) update your tailnet’s DNS nameservers with any matches it finds.
 
 ## Kubernetes Deployment
 
-Below is an example **Deployment** YAML snippet. It runs a single replica of the `entrypoint` updater.
+Below is an example **Deployment** YAML snippet. It runs a single replica of the `tailscale-ddns` updater.
 
 ```yaml
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: entrypoint
+  name: tailscale-ddns
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: entrypoint
+      app: tailscale-ddns
   template:
     metadata:
       labels:
-        app: entrypoint
+        app: tailscale-ddns
     spec:
       containers:
-        - name: entrypoint
-          image: mattcoulter7/entrypoint:latest
+        - name: tailscale-ddns
+          image: mattcoulter7/tailscale-ddns:latest
           securityContext:
             capabilities:
               add:
@@ -76,7 +76,7 @@ spec:
             - name: TAILNET
               value: "tail***.ts.net"
             - name: DEVICE_PATTERN
-              value: "entrypoint-"
+              value: "tailscale-ddns-"
             - name: DOMAIN
               value: "your.domain"
 ```
@@ -84,13 +84,13 @@ spec:
 Apply it to your cluster:
 
 ```bash
-kubectl apply -f entrypoint-deployment.yaml
+kubectl apply -f tailscale-ddns-deployment.yaml
 ```
 
 To observe logs:
 
 ```bash
-kubectl logs -f deployment/entrypoint
+kubectl logs -f deployment/tailscale-ddns
 ```
 
 ## Docker Compose
@@ -100,13 +100,13 @@ For environments using **docker-compose**, you can define a service like so:
 ```yaml
 version: '3.7'
 services:
-  entrypoint:
-    image: mattcoulter7/entrypoint:latest
-    container_name: entrypoint
+  tailscale-ddns:
+    image: mattcoulter7/tailscale-ddns:latest
+    container_name: tailscale-ddns
     environment:
       - TAILSCALE_API_KEY=tskey-api-***
       - TAILNET=your-tail***.ts.net
-      - DEVICE_PATTERN=entrypoint-
+      - DEVICE_PATTERN=tailscale-ddns-
       - DOMAIN=your.domain
 ```
 
